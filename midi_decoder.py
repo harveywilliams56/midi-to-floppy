@@ -4,7 +4,7 @@ class midi_decoder:
 		piece = open('minimal.mid')
 		data = piece.read()
 		self.hexi = tool.hexlify(data)
-		self.MTrck = '4d5464'
+		self.MTrck = '4d54726b'
 		self.notes = []
 	def search(self,data,item,cp): ##class for finding 'item' in text and returning cursor position
 		found = 0
@@ -21,6 +21,7 @@ class midi_decoder:
 	def run(self):
 		result = self.search(self.hexi,self.MTrck,0)
 		print result
+		##print self.hexi
 		
 if __name__ == '__main__':
 	midi_decoder().run()
