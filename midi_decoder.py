@@ -5,23 +5,43 @@ class midi_decoder:
 		data = piece.read()
 		self.hexi = tool.hexlify(data)
 		self.MTrck = '4d54726b'
-		self.notes = []
-	def search(self,data,item,cp): ##class for finding 'item' in text and returning cursor position
+		self.tracks = []
+
+
+	def search(self,item,cp): ##class for finding 'item' in text and returning cursor position
 		found = 0
 		item.split ##turns str 'item' into a list of its seperate characters
 		cursor_position = cp
-		for letter in data:
-			if found == len(item)-1:
-				return cursor_position
-			if letter != item[found]:
-				found = 0
-			if letter == item[found]:
-				found += 1
-			cursor_position += 1
+		for letter in self.hexi:
+			if cp == 0:
+				if found == len(item)-1:
+					return cursor_position
+				if letter != item[found]:
+					found = 0
+				if letter == item[found]:
+					found += 1
+				cursor_position += 1
+			else:
+				cp -=1
+		return 'null'
+
+
 	def run(self):
-		result = self.search(self.hexi,self.MTrck,0)
-		print result
-		##print self.hexi
+		print self.find_tracks()
+
+
+	def find_tracks(self):
+		more = True
+		cp = 0
+		while more:
+			cp = self.search(self.MTrck,cp)
+			if cp == 'null':
+				return self.tracks
+				more = False
+			else:
+				 self.tracks += [cp]
+		
+		
 		
 if __name__ == '__main__':
 	midi_decoder().run()
