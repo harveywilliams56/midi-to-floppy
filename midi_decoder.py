@@ -23,9 +23,20 @@ class midi_decoder:
 		return positions
 
 
+	def clean_data(self):
+		events = self.search('ff')
+		remove_event = []
+		for event in events:
+			check = "".join(self.return_data(event+1,event+2))
+			if check == 'f2':
+				pass
+			else:
+				pass
+			
 	def run(self):
 		if True:
 			print self.hexi
+			#self.clean_data()
 			events = []
 			tracks = self.search('4d54726b')
 			end_tracks = self.search('ff2f00')
@@ -45,17 +56,9 @@ class midi_decoder:
 				letters += letter
 			if end == 0:
 				return letters
-
-
-	def find_events(self,TrackStart,TrackEnd):
-		vlv = 0
-		events = []
-		cp = TrackStart + 9
-		while True:
+	def find_continuation(self,cp):
 			continuation = True
-			if cp >= TrackEnd:
-				events.pop() ##removes last event, which is an end track
-				return events
+			vlv = 0
 			while continuation:
 				raw_data = self.return_data(cp, cp + 1)
 				value_str = "".join(raw_data)
@@ -65,9 +68,19 @@ class midi_decoder:
 					vlv += 1
 					cp += 2 
 				else:
-					continuation = False
-			events += ["".join(self.return_data(cp - (2*vlv), cp+7))]
-			cp += 8
+					return vlv
+
+	def find_events(self,TrackStart,TrackEnd):
+		events = []
+		cp = TrackStart + 9
+		while True:
+			if cp >= TrackEnd:
+				events.pop() ##removes last event, which is an end track
+				return events
+			vlv = self.find_continuation(cp)
+			length = (vlv*2)+7
+			events += ["".join(self.return_data(cp, cp + length))]
+			cp += length + 1
 			vlv = 0
 			print events
 			
