@@ -1,7 +1,7 @@
 import binascii as tool #importing module containing hex conversion
 class midi_decoder:
 	def __init__(self):
-		piece = open('minimal.mid')
+		piece = open('Tetris_MusicA.mid')
 		data = piece.read()
 		self.hexi = tool.hexlify(data)
 
@@ -22,29 +22,48 @@ class midi_decoder:
 				found = 0
 		return positions
 
+	def stitch(self,remove):
+		vlv = self.find_continuation(remove-3)
+		cont = self.find_continuation(remove+3)
+		value_str = "".join(self.return_data(remove+3,remove +(2*cont)+4))
+		length = int(value_str, 16)*2
+		first_part = "".join(self.return_data(0,remove - (2*vlv)-4))
+		second_part = "".join(self.return_data(remove+(2*cont)+ 5 + length,len(self.hexi))) 
+		self.hexi = first_part + second_part
 
-	def clean_data(self):
-		events = self.search('ff')
-		remove_event = []
-		for event in events:
-			check = "".join(self.return_data(event+1,event+2))
-			if check == 'f2':
-				pass
-			else:
-				pass
 			
+
+	def remove_meta(self):
+		skip = 0
+		loop = True
+		while loop:	
+			events = self.search('ff')
+			if events != 'null' and len(events) != skip:
+				event = events[skip]
+				#print self.return_data(event+1,event+2)
+				check = "".join(self.return_data(event+1,event+2))
+				if check == '2f':
+					skip += 1
+				if check != '2f':
+					self.stitch(event)
+			else:
+				loop = False			
 	def run(self):
 		if True:
-			print self.hexi
-			#self.clean_data()
+			self.remove_meta()
 			events = []
 			tracks = self.search('4d54726b')
+			print tracks
 			end_tracks = self.search('ff2f00')
-			extra = tracks + [len(self.hexi)]
+			print end_tracks
+			if len(tracks) != len(end_tracks):
+				end_tracks = end_tracks + [len(self.hexi)-1]
 			for track in range(0,len(tracks)):
 				print track
-				events += [self.find_events(tracks[track],end_tracks[track])]
-				print events
+				event =  [self.find_events(tracks[track],end_tracks[track])] 
+				print event
+				events += event
+			print events
 
 	
 	def return_data(self,start,end):
@@ -64,7 +83,6 @@ class midi_decoder:
 				value_str = "".join(raw_data)
 				value = int(value_str, 16)
 				if value >= 128:
-					print raw_data
 					vlv += 1
 					cp += 2 
 				else:
@@ -72,27 +90,25 @@ class midi_decoder:
 
 	def find_events(self,TrackStart,TrackEnd):
 		events = []
-		cp = TrackStart + 9
+		cp = TrackStart + 5
 		while True:
 			if cp >= TrackEnd:
-				events.pop() ##removes last event, which is an end track
+				#events.pop() ##removes last event, which is an end track
 				return events
 			vlv = self.find_continuation(cp)
 			length = (vlv*2)+7
 			events += ["".join(self.return_data(cp, cp + length))]
 			cp += length + 1
 			vlv = 0
-			print events
 			
 	def find_notes(self,TrackStart,TrackEnd):
 		notes = []
-		cp = TrackStart+8
+		cp = TrackStart+5
 		while True:
 			value = self.return_data(cp,cp+1)
 			if cp >= TrackEnd or cp == 'null':
 				return notes
 			if value == '9':
-				print cp
 				note = self.return_data(cp+2, cp+4)
 				notes += [note]
 			cp += 6	
