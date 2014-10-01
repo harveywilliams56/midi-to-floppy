@@ -1,10 +1,12 @@
 import binascii as tool #importing module containing hex conversion
 class midi_decoder:
 	def __init__(self):
-		piece = open('twinkle_twinkle.mid')
+		file = 'test.mid'
+		piece = open(file)
 		data = piece.read()
 		self.hexi = tool.hexlify(data)
 		self.deltatoreal = 0
+		self.notes = [16.35, 17.32, 18.35, 19.45, 20.60, 21.83, 23.12, 24.50, 25.96, 27.50, 29.14, 30.87]
 
 
 	def search(self,item): ##class for finding 'item' in text and returning cursor position
@@ -64,8 +66,8 @@ class midi_decoder:
 			end_tracks = self.search('ff2f00')
 		for track in events:
 			print track
-			print self.find_notes(track)
-
+			deltas = self.find_delta(track)
+			print self.find_notes(deltas)
 	def return_data(self,start,end):
 		letters = []
 		for letter in self.hexi:
@@ -138,7 +140,7 @@ class midi_decoder:
 			TrackEnd -= (before-after)
 			
 
-	def find_notes(self, track):
+	def find_delta(self, track):
 		notes = []
 		pause = 0
 		length = 0
@@ -168,7 +170,18 @@ class midi_decoder:
 		return notes
 				
 				
-		
+	def find_notes(self, track):
+		new_track = []
+		for event in track:
+			multiple = 0
+			number = int(event[1], 16)-12
+			while number > 11:
+				number -= 12
+				multiple += 2
+			note = 1/(self.notes[number] * multiple)
+			event[1] = note
+			new_track += [event]
+		return new_track
 		
 		
 if __name__ == '__main__':
