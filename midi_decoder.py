@@ -1,10 +1,10 @@
 import binascii as tool #importing module containing hex conversion
 class midi_decoder:
 	def __init__(self):
-		piece = open('Pirates.mid')
+		piece = open('twinkle_twinkle.mid')
 		data = piece.read()
 		self.hexi = tool.hexlify(data)
-		#self.hexi = '4d54726b000000148000ff0202000000f70203f700f001f700ff2f004d54726b000000148000ff0202121100f70205f700f001f700ff2f00'
+		self.deltatoreal = 0
 
 
 	def search(self,item): ##class for finding 'item' in text and returning cursor position
@@ -23,36 +23,48 @@ class midi_decoder:
 				found = 0
 		return positions
 
-
+	def time_division(self):
+		header = self.search('4d546864')
+		time_type = int(self.return_data(header[0]+17,header[0]+17), 16)
+		if time_type < 8:
+			tempo = self.search('ff5103')
+			print tempo
+			if len(tempo) == 1:
+				tempo = tempo[0]
+				bpms = self.return_data(tempo+1, tempo+6)
+				print 'bpms', bpms
+				bpms = int(bpms, 16)
+			else:
+				bpms = 500000
+			debug = self.return_data(header[0]+17, header[0]+20)
+			print 'debug', debug, 'bpms', bpms
+			self.deltatoreal = int(debug, 16) * 1000000 / bpms
+		else:
+			frames = int(self.return_data(header[0]+17, header[0]+18,16)) - 128 
+			if frames == 29:
+				frames = 29.97
+			ticks_per_frame = int(self.return_data(header[0]+19, header[0]+20), 16)
+			self.deltatoreal = frames * ticks_per_frame
 			
-
-	def define_tracks():
+		print time_type
+		print 'time div. ',self.deltatoreal
+			
+	def run(self):
+		self.time_division()
+		events = []
 		tracks = self.search('4d54726b')
 		end_tracks = self.search('ff2f00')
-		for cp in end_tracks:
-			vlv = find_continuation(cp)
-		if len(end_tracks) != len(tracks):
+		if len(tracks) != len(end_tracks):
 			end_tracks = end_tracks + [len(self.hexi)-1]
-		
-	def run(self):
-		if True:
-			print self.hexi
-			#self.remove_meta()
-			events = []
+		for track in range(0,len(tracks)):
+			print "track", track
+			event =  self.find_events(tracks[track],end_tracks[0]) 
+			events += [event]
 			tracks = self.search('4d54726b')
 			end_tracks = self.search('ff2f00')
-			if len(tracks) != len(end_tracks):
-				end_tracks = end_tracks + [len(self.hexi)-1]
-			for track in range(0,len(tracks)):
-				print "track", track
-				event =  [self.find_events(tracks[track],end_tracks[0])] 
-				print event
-				events += event
-				tracks = self.search('4d54726b')
-				#print "tracks",tracks
-				end_tracks = self.search('ff2f00')
-				#print "end_tracks",end_tracks, len(end_tracks)
-			print events
+		for track in events:
+			print track
+			print self.find_notes(track)
 
 	def return_data(self,start,end):
 		letters = []
@@ -63,6 +75,8 @@ class midi_decoder:
 				letters += letter
 			if end == 0:
 				return "".join(letters)
+
+
 	def find_continuation(self,cp):
 			continuation = True
 			vlv = 0
@@ -74,11 +88,15 @@ class midi_decoder:
 					cp += 2 
 				else:
 					return vlv
+
+
 	def meta(self,cp, extra):
 		cont = self.find_continuation(cp+4)
 		value_str = self.return_data(cp+4,cp +(2*cont)+5)
 		length = int(value_str, 16)*2
 		return self.return_data(cp, cp + len(value_str) + length + 3)
+
+
 	def sys(self,cp, extra):
 		cont = self.find_continuation(cp+2)
 		value_str = self.return_data(cp+2,cp +(2*cont)+3)
@@ -112,27 +130,44 @@ class midi_decoder:
 					event = self.return_data(cp, cp + 3)
 				else:
 					event = self.return_data(cp, cp + 5)
-			event_whole = [[self.return_data(TrackStart+9, cp -1)], [event]]
+			event_whole = [self.return_data(TrackStart+9, cp -1), event]
 			events += [event_whole]
 			before = len(self.hexi)
 			self.hexi = self.return_data(0, TrackStart+8)+self.return_data(cp + len(event), len(self.hexi))
 			after = len(self.hexi)
 			TrackEnd -= (before-after)
-			print event_whole
 			
-	def find_notes(self,TrackStart,TrackEnd):
+
+	def find_notes(self, track):
 		notes = []
-		cp = TrackStart+9
-		while True:
-			value = self.return_data(cp,cp+1)
-			if cp >= TrackEnd or cp == 'null':
-				return notes
-			if value == '9':
-				note = self.return_data(cp+2, cp+4)
-				notes += [note]
-			cp += 6	
-		
-		
+		pause = 0
+		length = 0
+		search = False
+		for event in track:
+			delta = int(event[0], 16)
+			print event
+			note = event[1]
+			for extra in range(0,(len(event[0])-2)/2+1):
+				if extra != 0:
+					delta = delta - 2**(extra*8+7)
+				print extra, delta
+			if search == True:
+				length += delta
+				if (note[0] == '9' and note[4:6] == '00') or note[0] == '8':
+					if note[2:4] == pitch:
+						notes += [[pause, pitch, length]]
+						length = 0
+						pause = 0
+						search = False
+			if search != True:
+				if note[0] == '9'and note[4:6] != '00':
+					pitch = note[2:4]
+					search = True
+					pause = delta
+				
+		return notes
+				
+				
 		
 		
 		
