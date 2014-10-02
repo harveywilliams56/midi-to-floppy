@@ -313,7 +313,7 @@ while True:
 		sleep(wait_two)
 		wiringpi.digitalWrite(5, 1)
 		wait_one -= wait_two
-		wait_two = note_two[0]
+		wait_two = note_two[1]
 		repeat_two -= 1
 	if wait_one < wait_two:
 		wiringpi.digitalWrite(6, boolean_one)
@@ -323,17 +323,17 @@ while True:
 		sleep(wait_one)
 		wiringpi.digitalWrite(7, 1)
 		wait_two -= wait_one
-		wait_one = note_one[0]
+		wait_one = note_one[1]
 		repeat_one -= 1
 	if repeat_one == 0:
 		one += 1
-		gap = ((note_one[1]*note_one[0])*note_one[2]) + note_one[3]
+		gap = ((note_one[2]*note_one[1])*0.1)
 		note_one = layer_one[one]
-		wait_one = note_one[0] + gap
-		repeat_one = note_one[1]
+		wait_one = note_one[1] + gap + note_one[0]
+		repeat_one = note_one[2]
 	if repeat_two == 0:
 		two += 1
-		gap = ((note_two[1]*note_two[0])*note_two[2]) + note_two[3]
+		gap = ((note_two[2]*note_two[1])*0.1)
 		note_two = layer_two[two]
-		wait_two = note_two[0] + gap
+		wait_two = note_two[1] + gap + note_two[0]
 		repeat_two = note_two[1]
