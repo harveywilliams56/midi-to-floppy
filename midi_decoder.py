@@ -1,10 +1,10 @@
 import sys
-import wiringpi2 as wiringpi
-wiringpi.wiringPiSetup()
-wiringpi.pinMode(6,1)
-wiringpi.pinMode(7,1)
-wiringpi.pinMode(4,1)
-wiringpi.pinMode(5,1)
+#import wiringpi2 as wiringpi
+#wiringpi.wiringPiSetup()
+#wiringpi.pinMode(6,1)
+#wiringpi.pinMode(7,1)
+#wiringpi.pinMode(4,1)
+#wiringpi.pinMode(5,1)
 from time import sleep
 import binascii as tool #importing module containing hex conversion
 class midi_decoder:
@@ -18,19 +18,11 @@ class midi_decoder:
 
 
 	def search(self,item): ##class for finding 'item' in text and returning cursor position
+		skip = 0
 		positions = []
-		found = 0
-		cursor_position = 0
-		item.split ##turns str 'item' into a list of its seperate characters
-		for letter in self.hexi:
-			cursor_position += 1
-			if letter != item[found]:
-				found = 0
-			if letter == item[found]:
-				found += 1
-			if found == len(item):
-				positions += [cursor_position]
-				found = 0
+		while self.hexi.find(item, skip) != -1:
+			skip = self.hexi.find(item, skip) + len(item)
+			positions += [skip]
 		return positions
 
 	def time_division(self):
@@ -79,18 +71,14 @@ class midi_decoder:
 			notes =  self.find_notes(deltas)
 			final = self.calculate_loops(notes)
 			playable += [final]
-		self.play(playable)
+		print playable
 		
 	def return_data(self,start,end):
-		letters = []
-		for letter in self.hexi:
-			start -= 1
-			end -= 1
-			if start <= 0 and end >= 0:
-				letters += letter
-			if end == 0:
-				return "".join(letters)
-
+		if start != 0:
+			return self.hexi[start-1:end]
+		else:
+			return self.hexi[start:end]
+			
 
 	def find_continuation(self,cp):
 			continuation = True
